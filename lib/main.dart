@@ -29,3 +29,4 @@ class PocketControlApp extends StatelessWidget {
     );
   }
 }
+//app no tiene rutas renombradas , implementarlo 
