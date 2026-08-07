@@ -1,6 +1,32 @@
-# PocketControl - Login y Menú Principal
+# PocketControl - Login, Dashboard y rutas nombradas
 
-PocketControl ahora incluye el flujo de acceso y la segunda pantalla principal del producto: el Dashboard financiero.
+PocketControl ahora incluye el flujo de acceso, el Dashboard financiero, navegación con rutas nombradas y persistencia real de movimientos.
+
+## Cambios recientes
+
+### Sistema de rutas nombradas
+
+La navegación ya no usa `MaterialPageRoute` directo. Todas las rutas viven en `lib/routes/app_routes.dart` dentro de `AppRoutes`, y `MaterialApp` las registra en un solo lugar.
+
+Esto ayuda a mantener la navegación consistente, evita literales sueltos y permite volver con `Navigator.pop(context)` o reemplazar pantallas con `Navigator.pushReplacementNamed(...)` cuando corresponde.
+
+### Registro real de usuarios
+
+La pantalla de Login ahora permite crear una cuenta real con nombre, contraseña y confirmación. El registro valida campos vacíos, longitud mínima de contraseña y coincidencia entre contraseña y confirmación.
+
+Al registrarse, el usuario se guarda en `SharedPreferences` y luego puede iniciar sesión con esas credenciales. Si todavía no existe ningún usuario, la app muestra un mensaje claro para crear una cuenta antes de intentar ingresar.
+
+### Sincronización entre Dashboard, Ingreso y Gasto
+
+Las pantallas de registrar ingreso y registrar gasto guardan el movimiento, actualizan los totales persistidos y luego hacen `Navigator.pop(context)`.
+
+En el Dashboard, cada acceso rápido espera el regreso de la pantalla abierta y recarga los datos desde `PreferencesService`, así que el saldo, los ingresos y los gastos se refrescan sin cerrar la app.
+
+### Historial de movimientos
+
+Los movimientos se guardan como una lista JSON en `SharedPreferences` con tipo, monto, categoría, fecha y descripción opcional.
+
+La pantalla de historial lee esa lista con `PreferencesService.obtenerMovimientos()` y la presenta para consulta del usuario.
 
 ## Pantalla 1: Login
 
@@ -36,8 +62,8 @@ Si alguna de esas pantallas todavía no tiene contenido funcional, se muestran c
 El Dashboard incluye un botón de cerrar sesión en el `AppBar`. Al pulsarlo:
 
 1. Se ejecuta `PreferencesService.cerrarSesion()`.
-2. Se eliminan los datos guardados del usuario, la sesión y los totales financieros.
-3. La navegación regresa a `LoginScreen` usando `Navigator.pushReplacement`.
+2. Se cierra la sesión activa sin borrar el usuario registrado.
+3. La navegación regresa a `LoginScreen` usando `Navigator.pushReplacementNamed`.
 
 ## Persistencia con SharedPreferences
 
@@ -50,11 +76,13 @@ Se guardan estos valores:
 - `sesionActiva`: bandera booleana que indica si la sesión debe restaurarse automáticamente.
 - `totalIngresos`: total acumulado de ingresos, tipo `double`.
 - `totalGastos`: total acumulado de gastos, tipo `double`.
+- `movimientos`: lista serializada en JSON con el historial de ingresos y gastos.
 
 Si `totalIngresos` o `totalGastos` no existen todavía, se usan por defecto como `0.0`.
 
 ## Archivos nuevos o modificados
 
-- `lib/screens/dashboard_screen.dart`: nueva pantalla principal con tarjetas, accesos rápidos y cierre de sesión.
-- `lib/screens/login_screen.dart`: ahora redirige al Dashboard cuando la sesión ya está activa o cuando el login se completa correctamente.
-- `lib/services/preferences_service.dart`: agrega lectura y guardado de ingresos y gastos acumulados.
+- `lib/routes/app_routes.dart`: centraliza todas las rutas nombradas de la app.
+- `lib/screens/dashboard_screen.dart`: ahora navega con rutas nombradas y refresca los totales al volver de ingreso o gasto.
+- `lib/screens/login_screen.dart`: incluye registro real de usuario y validación contra credenciales guardadas.
+- `lib/services/preferences_service.dart`: agrega registro de usuario, lectura y guardado de ingresos, gastos e historial.

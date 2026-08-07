@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'dashboard_screen.dart';
+import '../routes/app_routes.dart';
 import '../services/preferences_service.dart';
 
 /// Pantalla de inicio de sesión de PocketControl.
@@ -18,8 +18,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final PreferencesService _preferencesService = PreferencesService();
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _contrasenaController = TextEditingController();
+  final TextEditingController _confirmarContrasenaController =
+      TextEditingController();
 
   bool _cargando = true;
+  bool _mostrandoRegistro = false;
 
   @override
   void initState() {
@@ -31,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _nombreController.dispose();
     _contrasenaController.dispose();
+    _confirmarContrasenaController.dispose();
     super.dispose();
   }
 
@@ -43,7 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (sesionActiva) {
-      _navegarADashboard();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _navegarADashboard();
+        }
+      });
       return;
     }
 
@@ -52,17 +60,67 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  /// Valida los campos y guarda la sesión cuando ambos valores son válidos.
+  /// Guarda un usuario nuevo en las preferencias del dispositivo.
+  Future<void> _registrarUsuario() async {
+    final String nombre = _nombreController.text.trim();
+    final String contrasena = _contrasenaController.text.trim();
+    final String confirmacion = _confirmarContrasenaController.text.trim();
+
+    if (nombre.isEmpty || contrasena.isEmpty || confirmacion.isEmpty) {
+      _mostrarMensaje('Completa todos los campos para crear tu cuenta.');
+      return;
+    }
+
+    if (contrasena.length < 6) {
+      _mostrarMensaje('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    if (contrasena != confirmacion) {
+      _mostrarMensaje('La contraseña y su confirmación no coinciden.');
+      return;
+    }
+
+    await _preferencesService.guardarUsuarioRegistrado(nombre, contrasena);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _mostrandoRegistro = false;
+    });
+    _confirmarContrasenaController.clear();
+    _contrasenaController.clear();
+
+    _mostrarMensaje('Cuenta creada correctamente. Ahora inicia sesión.');
+  }
+
+  /// Valida las credenciales contra lo que ya está almacenado en SharedPreferences.
   Future<void> _iniciarSesion() async {
     final String nombre = _nombreController.text.trim();
     final String contrasena = _contrasenaController.text.trim();
 
     if (nombre.isEmpty || contrasena.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes ingresar nombre y contraseña para continuar.'),
-        ),
+      _mostrarMensaje('Debes ingresar nombre y contraseña para continuar.');
+      return;
+    }
+
+    final bool hayUsuarioRegistrado = await _preferencesService
+        .tieneUsuarioRegistrado();
+
+    if (!hayUsuarioRegistrado) {
+      _mostrarMensaje(
+        'No hay ningún usuario registrado. Crea una cuenta antes de iniciar sesión.',
       );
+      return;
+    }
+
+    final bool credencialesValidas = await _preferencesService
+        .validarCredenciales(nombre, contrasena);
+
+    if (!credencialesValidas) {
+      _mostrarMensaje('Usuario o contraseña incorrectos.');
       return;
     }
 
@@ -75,13 +133,18 @@ class _LoginScreenState extends State<LoginScreen> {
     _navegarADashboard();
   }
 
+  /// Muestra mensajes cortos sin duplicar el código de SnackBar.
+  void _mostrarMensaje(String mensaje) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensaje)));
+  }
+
   /// Reemplaza el login por el menú principal.
   void _navegarADashboard() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute<DashboardScreen>(
-        builder: (BuildContext context) => const DashboardScreen(),
-      ),
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.dashboard,
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -160,7 +223,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Accede para revisar tus finanzas personales.',
+          _mostrandoRegistro
+              ? 'Crea tu cuenta para empezar a usar PocketControl.'
+              : 'Accede para revisar tus finanzas personales.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
@@ -185,20 +250,44 @@ class _LoginScreenState extends State<LoginScreen> {
             prefixIcon: const Icon(Icons.lock_outline),
           ),
         ),
+        if (_mostrandoRegistro) ...[
+          const SizedBox(height: 16),
+          TextField(
+            controller: _confirmarContrasenaController,
+            obscureText: true,
+            decoration: baseDecoration.copyWith(
+              hintText: 'Confirmar contraseña',
+              labelText: 'Confirmar contraseña',
+              prefixIcon: const Icon(Icons.lock_reset_outlined),
+            ),
+          ),
+        ],
         const SizedBox(height: 28),
         FilledButton(
-          onPressed: _iniciarSesion,
+          onPressed: _mostrandoRegistro ? _registrarUsuario : _iniciarSesion,
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: const Text('Iniciar sesión'),
+          child: Text(_mostrandoRegistro ? 'Crear cuenta' : 'Iniciar sesión'),
         ),
         const SizedBox(height: 12),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _mostrandoRegistro = !_mostrandoRegistro;
+            });
+          },
+          child: Text(
+            _mostrandoRegistro ? 'Ya tengo una cuenta' : 'Crear cuenta',
+          ),
+        ),
         Text(
-          'Si la sesión ya existe, PocketControl te enviará directo al menú principal.',
+          _mostrandoRegistro
+              ? 'El registro guarda el usuario de forma real en SharedPreferences.'
+              : 'Si la sesión ya existe, PocketControl te enviará directo al menú principal.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
