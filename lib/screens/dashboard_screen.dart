@@ -250,6 +250,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               icon: Icons.pie_chart_outline,
                               onTap: () => _irA(AppRoutes.estadisticas),
                             ),
+                            _AccessCard(
+                              title: 'Tipo de cambio',
+                              icon: Icons.currency_exchange,
+                              onTap: () => _irA(AppRoutes.tipoCambio),
+                            ),
+
+                            _AccessCard(
+                              title: 'Clima',
+                              icon: Icons.cloud_outlined,
+                              onTap: () => _irA(AppRoutes.clima),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 24),

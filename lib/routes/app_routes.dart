@@ -10,5 +10,8 @@ class AppRoutes {
   static const String historial = '/historial';
   static const String estadisticas = '/estadisticas';
 
+  static const String tipoCambio = '/tipo-cambio';
+  static const String clima = '/clima';
+
   const AppRoutes._();
 }

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'routes/app_routes.dart';
+
+import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/estadisticas_screen.dart';
+import 'screens/ingreso_screen.dart';
 import 'screens/gasto_screen.dart';
 import 'screens/historial_screen.dart';
-import 'screens/ingreso_screen.dart';
-import 'screens/login_screen.dart';
+import 'screens/estadisticas_screen.dart';
+import 'screens/tipo_cambio_screen.dart';
+import 'screens/clima_screen.dart';
 
 void main() {
   runApp(const PocketControlApp());
@@ -33,6 +36,8 @@ class PocketControlApp extends StatelessWidget {
         AppRoutes.historial: (BuildContext context) => const HistorialScreen(),
         AppRoutes.estadisticas: (BuildContext context) =>
             const EstadisticasScreen(),
+        AppRoutes.tipoCambio: (context) => const TipoCambioScreen(),
+        AppRoutes.clima: (context) => const ClimaScreen(),
       },
       theme: ThemeData(
         useMaterial3: true,
