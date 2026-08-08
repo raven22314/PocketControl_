@@ -12,6 +12,7 @@ class PreferencesService {
   static const String _keySesionActiva = 'sesionActiva';
   static const String _keyTotalIngresos = 'totalIngresos';
   static const String _keyTotalGastos = 'totalGastos';
+  static const String _keyMonedaPreferida = 'monedaPreferida';
   static const String _keyMovimientos = 'movimientos';
 
   /// Guarda o actualiza el usuario registrado en el dispositivo.
@@ -84,6 +85,12 @@ class PreferencesService {
     return prefs.getDouble(_keyTotalGastos) ?? 0.0;
   }
 
+  /// Obtiene la moneda preferida para mostrar los montos.
+  Future<String> obtenerMonedaPreferida() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyMonedaPreferida) ?? 'MXN';
+  }
+
   /// Agrega un movimiento al historial persistido como JSON serializado.
   Future<void> agregarMovimiento(Map<String, dynamic> movimiento) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -123,6 +130,12 @@ class PreferencesService {
   Future<void> guardarTotalGastos(double monto) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_keyTotalGastos, monto);
+  }
+
+  /// Guarda la moneda preferida para el formato del saldo y los totales.
+  Future<void> guardarMonedaPreferida(String moneda) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyMonedaPreferida, moneda);
   }
 
   /// Borra todos los datos guardados para dejar la app en estado inicial.

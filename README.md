@@ -36,6 +36,8 @@ La pantalla `LoginScreen` sigue siendo el punto de entrada de la app. Su respons
 
 La pantalla `DashboardScreen` es el menú principal de PocketControl. Su propósito es mostrar un resumen rápido del estado financiero del usuario y ofrecer accesos directos a las funciones más importantes de la app.
 
+Desde el `AppBar` también se puede abrir un selector pequeño de moneda para cambiar cómo se muestran el saldo, los ingresos y los gastos. La selección se guarda en `SharedPreferences` para conservar la preferencia entre sesiones.
+
 ### Datos que muestra
 
 El Dashboard muestra tres tarjetas principales:

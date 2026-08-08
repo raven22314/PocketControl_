@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/clima.dart';
 import '../services/clima_service.dart';
@@ -17,6 +18,12 @@ class _ClimaScreenState extends State<ClimaScreen> {
   Clima? _clima;
   bool _cargando = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _buscarClimaPorUbicacion();
+  }
 
   Future<void> _buscarClima() async {
     final ciudad = _ciudadController.text.trim();
@@ -37,6 +44,10 @@ class _ClimaScreenState extends State<ClimaScreen> {
     try {
       final clima = await _climaService.obtenerClima(ciudad);
 
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _clima = clima;
       });
@@ -48,6 +59,70 @@ class _ClimaScreenState extends State<ClimaScreen> {
       setState(() {
         _cargando = false;
       });
+    }
+  }
+
+  Future<void> _buscarClimaPorUbicacion() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+
+    try {
+      final bool servicioHabilitado =
+          await Geolocator.isLocationServiceEnabled();
+      if (!servicioHabilitado) {
+        throw Exception('Activa el GPS para obtener tu ubicación actual.');
+      }
+
+      LocationPermission permiso = await Geolocator.checkPermission();
+      if (permiso == LocationPermission.denied) {
+        permiso = await Geolocator.requestPermission();
+      }
+
+      if (permiso == LocationPermission.denied) {
+        throw Exception('Permiso de ubicación denegado.');
+      }
+
+      if (permiso == LocationPermission.deniedForever) {
+        throw Exception(
+          'Permiso de ubicación denegado permanentemente. Habilítalo desde ajustes.',
+        );
+      }
+
+      final Position posicion = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      final clima = await _climaService.obtenerClimaPorCoordenadas(
+        latitud: posicion.latitude,
+        longitud: posicion.longitude,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _clima = clima;
+        _ciudadController.text = clima.ciudad;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+        });
+      }
     }
   }
 
@@ -76,6 +151,17 @@ class _ClimaScreenState extends State<ClimaScreen> {
             ),
 
             const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _cargando ? null : _buscarClimaPorUbicacion,
+                icon: const Icon(Icons.my_location),
+                label: const Text('Usar mi ubicación actual'),
+              ),
+            ),
+
+            const SizedBox(height: 12),
 
             TextField(
               controller: _ciudadController,
