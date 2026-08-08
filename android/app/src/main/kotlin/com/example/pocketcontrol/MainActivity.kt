@@ -1,4 +1,4 @@
-package com.example.pocketcontrol
+package com.pocketcontrol.app
 
 import io.flutter.embedding.android.FlutterActivity
 
